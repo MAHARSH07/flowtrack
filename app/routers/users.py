@@ -1,0 +1,33 @@
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+
+from app.database import get_db
+from app.models.user import User
+from app.schemas.user import UserCreate, UserResponse
+
+router = APIRouter(prefix="/users", tags=["Users"])
+
+
+@router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+def create_user(user: UserCreate, db: Session = Depends(get_db)):
+    existing_user = db.query(User).filter(User.email == user.email).first()
+    if existing_user:
+        raise HTTPException(
+            status_code=400,
+            detail="User with this email already exists"
+        )
+
+    new_user = User(
+        email=user.email,
+        full_name=user.full_name,
+        role=user.role.value
+    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return new_user
+
+
+@router.get("/", response_model=list[UserResponse])
+def list_users(db: Session = Depends(get_db)):
+    return db.query(User).all()
