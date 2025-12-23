@@ -5,6 +5,7 @@ from sqlalchemy.sql import func
 
 from app.database import Base
 from app.models.enums import UserRole
+from sqlalchemy import Column, String 
 
 class User(Base):
     __tablename__ = "users"
@@ -12,6 +13,7 @@ class User(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email = Column(String, unique=True, nullable=False, index=True)
     full_name = Column(String, nullable=False)
-    role = Column(String, nullable=False, default=UserRole.EMPLOYEE.value)
+    role = Column(String, nullable=False)
+    hashed_password = Column(String, nullable=False)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

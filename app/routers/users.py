@@ -20,8 +20,10 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
     new_user = User(
         email=user.email,
         full_name=user.full_name,
-        role=user.role.value
+        role=user.role.value,
+        hashed_password=user.password  # TEMP
     )
+
     db.add(new_user)
     db.commit()
     db.refresh(new_user)

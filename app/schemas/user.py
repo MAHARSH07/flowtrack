@@ -9,7 +9,7 @@ class UserBase(BaseModel):
     role: UserRole
 
 class UserCreate(UserBase):
-    pass
+    password: str
 
 class UserResponse(UserBase):
     id: UUID
