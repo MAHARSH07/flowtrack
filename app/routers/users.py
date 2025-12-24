@@ -6,6 +6,7 @@ from app.models.user import User
 from app.schemas.user import UserCreate, UserResponse
 from app.core.security import hash_password
 from app.core.dependencies import get_current_user
+from app.core.permissions import require_roles
 
 
 router = APIRouter(prefix="/users", tags=["Users"])
@@ -33,11 +34,19 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
     db.refresh(new_user)
     return new_user
 
-
 @router.get("/", response_model=list[UserResponse])
-def list_users(db: Session = Depends(get_db)):
+def list_users(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("ADMIN"))
+):
     return db.query(User).all()
 
 @router.get("/me", response_model=UserResponse)
 def read_me(current_user: User = Depends(get_current_user)):
     return current_user
+
+@router.get("/elevated")
+def elevated_access(
+    current_user: User = Depends(require_roles("ADMIN", "MANAGER"))
+):
+    return {"message": "You have elevated access"}
