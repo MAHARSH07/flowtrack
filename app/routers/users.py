@@ -5,6 +5,7 @@ from app.database import get_db
 from app.models.user import User
 from app.schemas.user import UserCreate, UserResponse
 from app.core.security import hash_password
+from app.core.dependencies import get_current_user
 
 
 router = APIRouter(prefix="/users", tags=["Users"])
@@ -36,3 +37,7 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
 @router.get("/", response_model=list[UserResponse])
 def list_users(db: Session = Depends(get_db)):
     return db.query(User).all()
+
+@router.get("/me", response_model=UserResponse)
+def read_me(current_user: User = Depends(get_current_user)):
+    return current_user
