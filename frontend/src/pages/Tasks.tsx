@@ -1,27 +1,19 @@
-import { useEffect, useState } from "react";
-import { fetchTasks, updateTaskStatus } from "../api/tasks";
+import { useState } from "react";
+import { updateTaskStatus } from "../api/tasks";
 import { useCurrentUser } from "../auth/useCurrentUser";
 import type { Task, TaskStatus } from "../types/task";
 
-function Tasks() {
+type Props = {
+  tasks: Task[];
+  onRefresh: () => Promise<void>;
+};
+
+function Tasks({ tasks, onRefresh }: Props) {
   const { user, loading: userLoading } = useCurrentUser();
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<{
     taskId: string;
     status: TaskStatus;
   } | null>(null);
-
-  const loadTasks = async () => {
-    setLoading(true);
-    const data = await fetchTasks();
-    setTasks(data);
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    loadTasks();
-  }, []);
 
   const getAllowedStatuses = (task: Task): TaskStatus[] => {
     if (!user) return [];
@@ -43,11 +35,8 @@ function Tasks() {
   const changeStatus = async (taskId: string, status: TaskStatus) => {
     try {
       setUpdating({ taskId, status });
-      const updated = await updateTaskStatus(taskId, status);
-
-      setTasks((prev) =>
-        prev.map((t) => (t.id === updated.id ? updated : t))
-      );
+      await updateTaskStatus(taskId, status);
+      await onRefresh(); // 🔑 refresh from Dashboard
     } catch (err: any) {
       const msg =
         err.response?.data?.detail ||
@@ -59,7 +48,8 @@ function Tasks() {
     }
   };
 
-  if (loading || userLoading) return <p>Loading tasks...</p>;
+  if (userLoading) return <p>Loading tasks...</p>;
+  if (tasks.length === 0) return <p>No tasks found</p>;
 
   return (
     <div className="task-grid">

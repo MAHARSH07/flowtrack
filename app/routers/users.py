@@ -34,12 +34,31 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
     db.refresh(new_user)
     return new_user
 
-@router.get("/", response_model=list[UserResponse])
+@router.get("/", response_model=list[dict])
 def list_users(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles("ADMIN"))
+    current_user: User = Depends(get_current_user),
 ):
-    return db.query(User).all()
+    if current_user.role not in ["ADMIN", "MANAGER"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not allowed",
+        )
+
+    users = (
+        db.query(User)
+        .filter(User.role == "EMPLOYEE")
+        .all()
+    )
+
+    return [
+        {
+            "id": user.id,
+            "email": user.email,
+            "role": user.role,
+        }
+        for user in users
+    ]
 
 @router.get("/me", response_model=UserResponse)
 def read_me(current_user: User = Depends(get_current_user)):

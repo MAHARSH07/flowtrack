@@ -1,8 +1,11 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { logout } from "../auth/auth";
 import { useCurrentUser } from "../auth/useCurrentUser";
 import CreateTask from "../components/CreateTask";
 import Tasks from "./Tasks";
+import { fetchTasks } from "../api/tasks";
+import type { Task } from "../types/task";
 
 function Dashboard() {
   const navigate = useNavigate();
@@ -10,17 +13,30 @@ function Dashboard() {
   // Logged-in user (RBAC)
   const { user, loading: userLoading } = useCurrentUser();
 
-  const handleLogout = () => {
-    logout(); // clear token
-    navigate("/login", { replace: true }); // redirect immediately
+  // 🔑 Dashboard owns task state
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadTasks = async () => {
+    setLoading(true);
+    const data = await fetchTasks();
+    setTasks(data);
+    setLoading(false);
   };
 
-  // Wait until user info is loaded
+  useEffect(() => {
+    loadTasks();
+  }, []);
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login", { replace: true });
+  };
+
   if (userLoading) {
     return <p>Loading...</p>;
   }
 
-  // RBAC: who can create tasks
   const canCreateTask =
     user?.role === "ADMIN" || user?.role === "MANAGER";
 
@@ -41,18 +57,22 @@ function Dashboard() {
         </button>
       </div>
 
-      {/* Create Task (RBAC controlled) */}
+      {/* Create Task */}
       {canCreateTask && (
         <div className="section">
           <h2>Create Task</h2>
-          <CreateTask />
+          <CreateTask onCreated={loadTasks} />
         </div>
       )}
 
       {/* Tasks */}
       <div className="section">
         <h2>Tasks</h2>
-        <Tasks />
+        {loading ? (
+          <p>Loading tasks...</p>
+        ) : (
+          <Tasks tasks={tasks} onRefresh={loadTasks} />
+        )}
       </div>
     </div>
   );
