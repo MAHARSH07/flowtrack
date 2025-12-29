@@ -9,6 +9,7 @@ from sqlalchemy import create_engine
 
 from alembic import context
 from app.models import user  
+from app.models import task
 
 
 # this is the Alembic Config object, which provides
