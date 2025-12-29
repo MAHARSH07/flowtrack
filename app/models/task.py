@@ -5,6 +5,10 @@ from sqlalchemy import Column, String, DateTime, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
+from sqlalchemy import Enum
+
+
+
 
 from app.database import Base
 
@@ -20,7 +24,11 @@ class Task(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     title = Column(String, nullable=False)
     description = Column(String, nullable=True)
-    status = Column(String, nullable=False, default=TaskStatus.TODO)
+    status = Column(
+        Enum(TaskStatus, name="task_status_enum"),
+        nullable=False,
+        default=TaskStatus.TODO
+    )
 
     created_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     assigned_to_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
