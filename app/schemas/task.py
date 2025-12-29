@@ -22,3 +22,6 @@ class TaskResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class TaskUpdateStatus(BaseModel):
+    status: TaskStatus

@@ -11,27 +11,31 @@ from app.core.permissions import require_roles
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 
-@router.post(
-    "/",
-    response_model=TaskResponse,
-    status_code=status.HTTP_201_CREATED
-)
+@router.post("/", response_model=TaskResponse)
 def create_task(
-    data: TaskCreate,
+    task: TaskCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles("ADMIN", "MANAGER"))
+    current_user: User = Depends(get_current_user),
 ):
-    task = Task(
-        title=data.title,
-        description=data.description,
+    # RBAC: only ADMIN / MANAGER
+    if current_user.role not in ["ADMIN", "MANAGER"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not allowed to create tasks",
+        )
+
+    new_task = Task(
+        title=task.title,
+        description=task.description,
         created_by_id=current_user.id,
-        assigned_to_id=data.assigned_to_id,
-        status=TaskStatus.TODO,
+        assigned_to_id=task.assigned_to_id,
     )
-    db.add(task)
+
+    db.add(new_task)
     db.commit()
-    db.refresh(task)
-    return task
+    db.refresh(new_task)
+
+    return new_task
 
 @router.get("/", response_model=list[TaskResponse])
 def list_tasks(
