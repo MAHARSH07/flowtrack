@@ -1,26 +1,31 @@
 import { useState } from "react";
 import api from "../api/client";
 import { setToken } from "../auth/auth";
+import { useNavigate } from "react-router-dom";
+
 
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const navigate = useNavigate();
+
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
     try {
-      const response = await api.post("/auth/login", {
+        const response = await api.post("/auth/login", {
         email,
         password,
-      });
+        });
 
-      setToken(response.data.access_token);
-      alert("Login successful");
+        setToken(response.data.access_token);
+        navigate("/");
+
     } catch (err: any) {
-      setError(err.response?.data?.detail || "Login failed");
+        setError(err.response?.data?.detail || "Login failed");
     }
   };
 
