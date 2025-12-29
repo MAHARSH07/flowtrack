@@ -29,7 +29,6 @@ function Tasks() {
 
   return (
     <div className="section">
-    <h2>Tasks</h2>
 
     {tasks.length === 0 && <p>No tasks found</p>}
 

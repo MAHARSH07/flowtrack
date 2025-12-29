@@ -1,7 +1,11 @@
 import { useState } from "react";
 import { createTask } from "../api/tasks";
 
-function CreateTask({ onCreated }: { onCreated: () => void }) {
+type Props = {
+  onCreated?: () => void;
+};
+
+function CreateTask({ onCreated }: Props) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
@@ -10,40 +14,37 @@ function CreateTask({ onCreated }: { onCreated: () => void }) {
     e.preventDefault();
     setLoading(true);
 
-    try {
-      await createTask({ title, description });
-      setTitle("");
-      setDescription("");
-      onCreated();
-    } finally {
-      setLoading(false);
-    }
+    await createTask({ title, description });
+
+    setTitle("");
+    setDescription("");
+    setLoading(false);
+
+    onCreated?.();
   };
 
   return (
     <div className="section">
+      <form onSubmit={submit}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          <input
+            placeholder="Task title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            required
+          />
 
-      <div className="create-task-card">
-        <form onSubmit={submit} className="create-task-card">
-            <input
-                placeholder="Task title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                required
-            />
+          <textarea
+            placeholder="Task description (optional)"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
 
-            <textarea
-                placeholder="Task description (optional)"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-            />
-
-            <button type="submit" className="primary">
-                Create Task
-            </button>
-        </form>
-
-      </div>
+          <button className="primary" type="submit" disabled={loading}>
+            {loading ? "Creating..." : "Create Task"}
+          </button>
+        </div>
+      </form>
     </div>
   );
 }
