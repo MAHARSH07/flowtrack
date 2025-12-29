@@ -5,11 +5,18 @@ from uuid import UUID
 from app.database import get_db
 from app.models.task import Task, TaskStatus
 from app.models.user import User
-from app.schemas.task import TaskCreate, TaskResponse
+from app.schemas.task import TaskCreate, TaskResponse, TaskUpdateStatus
 from app.core.dependencies import get_current_user
 from app.core.permissions import require_roles
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
+
+VALID_TRANSITIONS = {
+    TaskStatus.TODO: [TaskStatus.IN_PROGRESS],
+    TaskStatus.IN_PROGRESS: [TaskStatus.DONE],
+    TaskStatus.DONE: [],
+}
+
 
 @router.post("/", response_model=TaskResponse)
 def create_task(
@@ -17,12 +24,27 @@ def create_task(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    # RBAC: only ADMIN / MANAGER
+    # Only ADMIN / MANAGER can create tasks
     if current_user.role not in ["ADMIN", "MANAGER"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You are not allowed to create tasks",
         )
+
+    # Assignment validation (if assignment requested)
+    if task.assigned_to_id:
+        assignee = db.query(User).filter(User.id == task.assigned_to_id).first()
+        if not assignee:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Assigned user does not exist",
+            )
+
+        if assignee.role != "EMPLOYEE":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Tasks can only be assigned to EMPLOYEE users",
+            )
 
     new_task = Task(
         title=task.title,
@@ -36,6 +58,7 @@ def create_task(
     db.refresh(new_task)
 
     return new_task
+
 
 @router.get("/", response_model=list[TaskResponse])
 def list_tasks(
@@ -53,23 +76,36 @@ def list_tasks(
 @router.patch("/{task_id}/status", response_model=TaskResponse)
 def update_task_status(
     task_id: UUID,
-    status: TaskStatus,
+    payload: TaskUpdateStatus,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     task = db.query(Task).filter(Task.id == task_id).first()
+
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
 
-    # EMPLOYEE can update only their own tasks
+    # EMPLOYEE restrictions
     if current_user.role == "EMPLOYEE":
+        # Can only update assigned tasks
         if task.assigned_to_id != current_user.id:
             raise HTTPException(
-                status_code=403,
-                detail="You can only update your own tasks"
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You can only update your assigned tasks",
             )
 
-    task.status = status
+        # Can only move to next valid status
+        allowed = VALID_TRANSITIONS.get(task.status, [])
+        if payload.status not in allowed:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid status transition from {task.status}",
+            )
+
+    # ADMIN / MANAGER can override workflow
+    task.status = payload.status
     db.commit()
     db.refresh(task)
+
     return task
+
