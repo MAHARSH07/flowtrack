@@ -16,12 +16,12 @@ export async function createTask(data: {
   return res.data;
 }
 
-export async function updateTaskStatus(
+export const updateTaskStatus = async (
   taskId: string,
   status: TaskStatus
-): Promise<Task> {
-  const res = await api.patch(`/tasks/${taskId}/status`, null, {
-    params: { status },
+) => {
+  const res = await api.patch(`/tasks/${taskId}/status`, {
+    status, 
   });
   return res.data;
-}
+};

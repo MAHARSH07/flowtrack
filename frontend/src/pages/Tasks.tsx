@@ -1,75 +1,104 @@
 import { useEffect, useState } from "react";
 import { fetchTasks, updateTaskStatus } from "../api/tasks";
+import { useCurrentUser } from "../auth/useCurrentUser";
 import type { Task, TaskStatus } from "../types/task";
 
 function Tasks() {
+  const { user, loading: userLoading } = useCurrentUser();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
-  const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [updating, setUpdating] = useState<{
+    taskId: string;
+    status: TaskStatus;
+  } | null>(null);
+
+  const loadTasks = async () => {
+    setLoading(true);
+    const data = await fetchTasks();
+    setTasks(data);
+    setLoading(false);
+  };
 
   useEffect(() => {
-    fetchTasks()
-      .then(setTasks)
-      .finally(() => setLoading(false));
+    loadTasks();
   }, []);
+
+  const getAllowedStatuses = (task: Task): TaskStatus[] => {
+    if (!user) return [];
+
+    // ADMIN / MANAGER
+    if (user.role === "ADMIN" || user.role === "MANAGER") {
+      return ["TODO", "IN_PROGRESS", "DONE"];
+    }
+
+    // EMPLOYEE
+    if (task.assigned_to_id !== user.id) return [];
+
+    if (task.status === "TODO") return ["IN_PROGRESS"];
+    if (task.status === "IN_PROGRESS") return ["DONE"];
+
+    return [];
+  };
 
   const changeStatus = async (taskId: string, status: TaskStatus) => {
     try {
-      setUpdatingId(taskId);
+      setUpdating({ taskId, status });
       const updated = await updateTaskStatus(taskId, status);
+
       setTasks((prev) =>
         prev.map((t) => (t.id === updated.id ? updated : t))
       );
+    } catch (err: any) {
+      const msg =
+        err.response?.data?.detail ||
+        err.response?.data?.message ||
+        "Action not allowed";
+      alert(typeof msg === "string" ? msg : JSON.stringify(msg));
     } finally {
-      setUpdatingId(null);
+      setUpdating(null);
     }
   };
 
-  if (loading) return <p>Loading tasks...</p>;
+  if (loading || userLoading) return <p>Loading tasks...</p>;
 
   return (
-    <div className="section">
-
-    {tasks.length === 0 && <p>No tasks found</p>}
-
     <div className="task-grid">
-        {tasks.map((task) => (
-        <div key={task.id} className="task-card">
+      {tasks.map((task) => {
+        const allowed = getAllowedStatuses(task);
+
+        return (
+          <div key={task.id} className="task-card">
             <h3>{task.title}</h3>
-            <p>{task.description}</p>
+            {task.description && <p>{task.description}</p>}
 
             <span className={`status-pill status-${task.status}`}>
-            {task.status}
+              {task.status}
             </span>
 
-            <div style={{ marginTop: "12px" }}>
-            <button
-                className="secondary"
-                onClick={() => changeStatus(task.id, "TODO")}
-            >
-                Move to TODO
-            </button>
+            {allowed.length > 0 && (
+              <div className="task-actions">
+                {allowed.map((status) => {
+                  const isUpdating =
+                    updating?.taskId === task.id &&
+                    updating.status === status;
 
-            <button
-                className="secondary"
-                onClick={() => changeStatus(task.id, "IN_PROGRESS")}
-            >
-                Start
-            </button>
-
-            <button
-                className="primary"
-                onClick={() => changeStatus(task.id, "DONE")}
-            >
-                Complete
-            </button>
-            </div>
-        </div>
-        ))}
-
+                  return (
+                    <button
+                      key={status}
+                      className="secondary"
+                      disabled={isUpdating}
+                      onClick={() => changeStatus(task.id, status)}
+                    >
+                      {isUpdating ? "Updating..." : `Move to ${status}`}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
-    </div>
-
   );
 }
 
