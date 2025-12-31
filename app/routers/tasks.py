@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from uuid import UUID
 from typing import Optional
 from fastapi import Query
+from sqlalchemy import or_
 
 from app.database import get_db
 from app.models.task import Task, TaskStatus
@@ -65,10 +66,12 @@ def create_task(
 @router.get("/", response_model=list[TaskResponse])
 def list_tasks(
     status: Optional[TaskStatus] = Query(None),
-    assigned: Optional[str] = Query(None),  # me | unassigned
+    assigned: Optional[str] = Query(None),
+    q: Optional[str] = Query(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+
     query = db.query(Task)
 
     # RBAC base query
@@ -90,6 +93,16 @@ def list_tasks(
                 detail="Not allowed to view unassigned tasks",
             )
         query = query.filter(Task.assigned_to_id.is_(None))
+
+    # Search (title + description)
+    if q:
+        query = query.filter(
+            or_(
+                Task.title.ilike(f"%{q}%"),
+                Task.description.ilike(f"%{q}%"),
+            )
+        )
+
 
     return query.all()
 

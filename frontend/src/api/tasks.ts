@@ -5,7 +5,9 @@ import type { Task, TaskStatus } from "../types/task";
 type TaskFilters = {
   status?: TaskStatus;
   assigned?: "me" | "unassigned";
+  q?: string;
 };
+
 
 export async function fetchTasks(filters?: TaskFilters): Promise<Task[]> {
   const res = await api.get("/tasks", {

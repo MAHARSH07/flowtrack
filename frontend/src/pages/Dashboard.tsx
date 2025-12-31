@@ -17,6 +17,9 @@ function Dashboard() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [search, setSearch] = useState("");
+
+
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
   const [assignmentFilter, setAssignmentFilter] =
     useState<AssignmentFilter>("ALL");
@@ -45,8 +48,13 @@ function Dashboard() {
       filters.assigned = "unassigned";
     }
 
+    if (search.trim()) {
+      filters.q = search.trim();
+    }
+
     loadTasks(filters);
-  }, [statusFilter, assignmentFilter]);
+  }, [statusFilter, assignmentFilter, search]);
+
 
   const handleLogout = () => {
     logout();
@@ -82,7 +90,8 @@ function Dashboard() {
       {canCreateTask && (
         <div className="section">
           <h2>Create Task</h2>
-          <CreateTask onCreated={loadTasks} />
+          <CreateTask onCreated={() => loadTasks()} />
+
         </div>
       )}
 
@@ -115,6 +124,14 @@ function Dashboard() {
               <option value="UNASSIGNED">Unassigned</option>
             )}
           </select>
+          <input
+            type="text"
+            placeholder="Search tasks..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ minWidth: "220px" }}
+        />
+
         </div>
       </div>
 
