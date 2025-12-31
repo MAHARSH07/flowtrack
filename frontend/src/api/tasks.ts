@@ -25,3 +25,13 @@ export const updateTaskStatus = async (
   });
   return res.data;
 };
+
+export async function assignTask(
+  taskId: string,
+  assigneeId: string
+) {
+  const res = await api.patch(`/tasks/${taskId}/assign`, null, {
+    params: { assignee_id: assigneeId },
+  });
+  return res.data;
+}

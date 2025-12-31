@@ -109,3 +109,39 @@ def update_task_status(
 
     return task
 
+@router.patch("/{task_id}/assign", response_model=TaskResponse)
+def assign_task(
+    task_id: UUID,
+    assignee_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    # RBAC
+    if current_user.role not in ["ADMIN", "MANAGER"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not allowed to assign tasks",
+        )
+
+    task = db.query(Task).filter(Task.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    assignee = db.query(User).filter(User.id == assignee_id).first()
+    if not assignee:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Assigned user does not exist",
+        )
+
+    if assignee.role != "EMPLOYEE":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Tasks can only be assigned to EMPLOYEE users",
+        )
+
+    task.assigned_to_id = assignee_id
+    db.commit()
+    db.refresh(task)
+
+    return task
