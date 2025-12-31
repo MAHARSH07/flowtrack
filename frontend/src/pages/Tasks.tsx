@@ -31,12 +31,10 @@ function Tasks({ tasks, onRefresh }: Props) {
   const getAllowedStatuses = (task: Task): TaskStatus[] => {
     if (!user) return [];
 
-    // ADMIN / MANAGER
     if (user.role === "ADMIN" || user.role === "MANAGER") {
       return ["TODO", "IN_PROGRESS", "DONE"];
     }
 
-    // EMPLOYEE
     if (task.assigned_to_id !== user.id) return [];
 
     if (task.status === "TODO") return ["IN_PROGRESS"];
@@ -83,12 +81,12 @@ function Tasks({ tasks, onRefresh }: Props) {
   const canAssign = user?.role === "ADMIN" || user?.role === "MANAGER";
 
   return (
-  <div className="task-grid">
-    {tasks.map((task) => {
-      const allowed = getAllowedStatuses(task);
-      const isUnassigned = !task.assigned_to_id;
+    <div className="task-grid">
+      {tasks.map((task) => {
+        const allowed = getAllowedStatuses(task);
+        const isUnassigned = !task.assigned_to;
 
-      return (
+        return (
           <div key={task.id} className="task-card">
             {/* Header */}
             <div className="task-header">
@@ -112,10 +110,25 @@ function Tasks({ tasks, onRefresh }: Props) {
               <p className="task-desc">{task.description}</p>
             )}
 
-            {/* Assignment (ADMIN / MANAGER only) */}
+            {/* Assigned To */}
+            <div className="task-owner">
+              {task.assigned_to ? (
+                <span>
+                  Assigned to{" "}
+                  <strong>{task.assigned_to.full_name}</strong>{" "}
+                  <span className="muted">
+                    ({task.assigned_to.email})
+                  </span>
+                </span>
+              ) : (
+                <span className="muted">No owner</span>
+              )}
+            </div>
+
+            {/* Assignment dropdown (ADMIN / MANAGER only) */}
             {canAssign && employees.length > 0 && (
               <div className="task-assign">
-                <label>Assigned to</label>
+                <label>Reassign</label>
 
                 <select
                   value={task.assigned_to_id || ""}
@@ -126,9 +139,7 @@ function Tasks({ tasks, onRefresh }: Props) {
                     handleAssign(task.id, assigneeId);
                   }}
                 >
-                  <option value="">
-                    {task.assigned_to_id ? "Change assignee" : "Unassigned"}
-                  </option>
+                  <option value="">Unassigned</option>
 
                   {employees.map((emp) => (
                     <option key={emp.id} value={emp.id}>
@@ -165,7 +176,6 @@ function Tasks({ tasks, onRefresh }: Props) {
       })}
     </div>
   );
-
 }
 
 export default Tasks;
