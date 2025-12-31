@@ -310,3 +310,16 @@ button.danger {
   gap: 10px;
   margin-top: 16px;
 }
+
+/* Highlight task assigned to current user */
+.task-card-mine {
+  border-left: 4px solid #2563eb;
+  background: #f8fafc;
+}
+
+/* Assigned to me badge */
+.status-mine {
+  background-color: #dbeafe;
+  color: #1e40af;
+  font-weight: 600;
+}

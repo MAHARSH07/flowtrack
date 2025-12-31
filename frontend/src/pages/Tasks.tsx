@@ -84,10 +84,16 @@ function Tasks({ tasks, onRefresh }: Props) {
     <div className="task-grid">
       {tasks.map((task) => {
         const allowed = getAllowedStatuses(task);
+        const isAssignedToMe = user?.id === task.assigned_to_id;
+
         const isUnassigned = !task.assigned_to;
 
         return (
-          <div key={task.id} className="task-card">
+          <div
+            key={task.id}
+            className={`task-card ${isAssignedToMe ? "task-card-mine" : ""}`}
+          >
+
             {/* Header */}
             <div className="task-header">
               <h3>{task.title}</h3>
@@ -102,6 +108,13 @@ function Tasks({ tasks, onRefresh }: Props) {
                     Unassigned
                   </span>
                 )}
+
+                {isAssignedToMe && (
+                  <span className="status-pill status-mine">
+                    Assigned to you
+                  </span>
+                )}
+
               </div>
             </div>
 
