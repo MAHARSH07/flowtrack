@@ -18,6 +18,9 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const LIMIT = 6;
+
 
 
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
@@ -25,7 +28,13 @@ function Dashboard() {
     useState<AssignmentFilter>("ALL");
 
   const loadTasks = async (
-    filters?: { status?: TaskStatus; assigned?: "me" | "unassigned" }
+    filters?: {
+      status?: TaskStatus;
+      assigned?: "me" | "unassigned";
+      q?: string;
+      page?: number;
+      limit?: number;
+    }
   ) => {
     setLoading(true);
     const data = await fetchTasks(filters);
@@ -34,7 +43,10 @@ function Dashboard() {
   };
 
   useEffect(() => {
-    const filters: any = {};
+    const filters: any = {
+      page,
+      limit: LIMIT,
+    };
 
     if (statusFilter !== "ALL") {
       filters.status = statusFilter;
@@ -53,6 +65,10 @@ function Dashboard() {
     }
 
     loadTasks(filters);
+  }, [statusFilter, assignmentFilter, search, page]);
+
+  useEffect(() => {
+    setPage(1);
   }, [statusFilter, assignmentFilter, search]);
 
 
@@ -90,7 +106,13 @@ function Dashboard() {
       {canCreateTask && (
         <div className="section">
           <h2>Create Task</h2>
-          <CreateTask onCreated={() => loadTasks()} />
+          <CreateTask
+            onCreated={() => {
+              setPage(1);
+              loadTasks({ page: 1, limit: LIMIT });
+            }}
+          />
+
 
         </div>
       )}
@@ -144,6 +166,26 @@ function Dashboard() {
           <Tasks tasks={tasks} onRefresh={loadTasks} />
         )}
       </div>
+      <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
+        <button
+          className="secondary"
+          disabled={page === 1}
+          onClick={() => setPage((p) => p - 1)}
+        >
+          Previous
+        </button>
+
+        <span>Page {page}</span>
+
+        <button
+          className="secondary"
+          disabled={tasks.length < LIMIT}
+          onClick={() => setPage((p) => p + 1)}
+        >
+          Next
+        </button>
+    </div>
+
     </div>
   );
 }

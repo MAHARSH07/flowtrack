@@ -6,7 +6,10 @@ type TaskFilters = {
   status?: TaskStatus;
   assigned?: "me" | "unassigned";
   q?: string;
+  page?: number;
+  limit?: number;
 };
+
 
 
 export async function fetchTasks(filters?: TaskFilters): Promise<Task[]> {

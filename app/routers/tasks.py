@@ -68,6 +68,8 @@ def list_tasks(
     status: Optional[TaskStatus] = Query(None),
     assigned: Optional[str] = Query(None),
     q: Optional[str] = Query(None),
+    page: int = Query(1, ge=1),
+    limit: int = Query(10, ge=1, le=50),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -104,7 +106,9 @@ def list_tasks(
         )
 
 
-    return query.all()
+    offset = (page - 1) * limit
+    return query.offset(offset).limit(limit).all()
+
 
 @router.patch("/{task_id}/status", response_model=TaskResponse)
 def update_task_status(
