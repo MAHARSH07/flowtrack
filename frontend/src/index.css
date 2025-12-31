@@ -177,3 +177,9 @@ button.danger {
   background: #d1fae5;
   color: #065f46;
 }
+
+.status-unassigned {
+  background-color: #f1f3f5;
+  color: #495057;
+  border: 1px dashed #adb5bd;
+}

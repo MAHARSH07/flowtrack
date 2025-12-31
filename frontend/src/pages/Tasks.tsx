@@ -18,12 +18,10 @@ function Tasks({ tasks, onRefresh }: Props) {
   const getAllowedStatuses = (task: Task): TaskStatus[] => {
     if (!user) return [];
 
-    // ADMIN / MANAGER
     if (user.role === "ADMIN" || user.role === "MANAGER") {
       return ["TODO", "IN_PROGRESS", "DONE"];
     }
 
-    // EMPLOYEE
     if (task.assigned_to_id !== user.id) return [];
 
     if (task.status === "TODO") return ["IN_PROGRESS"];
@@ -36,7 +34,7 @@ function Tasks({ tasks, onRefresh }: Props) {
     try {
       setUpdating({ taskId, status });
       await updateTaskStatus(taskId, status);
-      await onRefresh(); // 🔑 refresh from Dashboard
+      await onRefresh();
     } catch (err: any) {
       const msg =
         err.response?.data?.detail ||
@@ -55,16 +53,27 @@ function Tasks({ tasks, onRefresh }: Props) {
     <div className="task-grid">
       {tasks.map((task) => {
         const allowed = getAllowedStatuses(task);
+        const isUnassigned = !task.assigned_to_id;
 
         return (
           <div key={task.id} className="task-card">
             <h3>{task.title}</h3>
             {task.description && <p>{task.description}</p>}
 
-            <span className={`status-pill status-${task.status}`}>
-              {task.status}
-            </span>
+            {/* Status */}
+            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+              <span className={`status-pill status-${task.status}`}>
+                {task.status}
+              </span>
 
+              {isUnassigned && (
+                <span className="status-pill status-unassigned">
+                  Unassigned
+                </span>
+              )}
+            </div>
+
+            {/* Actions */}
             {allowed.length > 0 && (
               <div className="task-actions">
                 {allowed.map((status) => {
