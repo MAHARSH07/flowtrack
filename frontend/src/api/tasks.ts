@@ -2,8 +2,15 @@ import api from "./client";
 import type { Task, TaskStatus } from "../types/task";
 
 
-export async function fetchTasks(): Promise<Task[]> {
-  const res = await api.get("/tasks");
+type TaskFilters = {
+  status?: TaskStatus;
+  assigned?: "me" | "unassigned";
+};
+
+export async function fetchTasks(filters?: TaskFilters): Promise<Task[]> {
+  const res = await api.get("/tasks", {
+    params: filters,
+  });
   return res.data;
 }
 
@@ -35,3 +42,5 @@ export async function assignTask(
   });
   return res.data;
 }
+
+

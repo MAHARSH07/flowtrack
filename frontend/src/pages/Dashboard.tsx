@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { logout } from "../auth/auth";
 import { useCurrentUser } from "../auth/useCurrentUser";
@@ -17,47 +17,41 @@ function Dashboard() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // 🔍 filters
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
   const [assignmentFilter, setAssignmentFilter] =
     useState<AssignmentFilter>("ALL");
 
-  const loadTasks = async () => {
+  const loadTasks = async (
+    filters?: { status?: TaskStatus; assigned?: "me" | "unassigned" }
+  ) => {
     setLoading(true);
-    const data = await fetchTasks();
+    const data = await fetchTasks(filters);
     setTasks(data);
     setLoading(false);
   };
 
   useEffect(() => {
-    loadTasks();
-  }, []);
+    const filters: any = {};
+
+    if (statusFilter !== "ALL") {
+      filters.status = statusFilter;
+    }
+
+    if (assignmentFilter === "ME") {
+      filters.assigned = "me";
+    }
+
+    if (assignmentFilter === "UNASSIGNED") {
+      filters.assigned = "unassigned";
+    }
+
+    loadTasks(filters);
+  }, [statusFilter, assignmentFilter]);
 
   const handleLogout = () => {
     logout();
     navigate("/login", { replace: true });
   };
-
-  // ✅ filtered tasks (derived state)
-  const filteredTasks = useMemo(() => {
-    return tasks.filter((task) => {
-      // status filter
-      if (statusFilter !== "ALL" && task.status !== statusFilter) {
-        return false;
-      }
-
-      // assignment filter
-      if (assignmentFilter === "ME") {
-        return task.assigned_to_id === user?.id;
-      }
-
-      if (assignmentFilter === "UNASSIGNED") {
-        return !task.assigned_to_id;
-      }
-
-      return true;
-    });
-  }, [tasks, statusFilter, assignmentFilter, user]);
 
   if (userLoading) return <p>Loading...</p>;
 
@@ -97,7 +91,6 @@ function Dashboard() {
         <h2>Filters</h2>
 
         <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
-          {/* Status filter */}
           <select
             value={statusFilter}
             onChange={(e) =>
@@ -110,7 +103,6 @@ function Dashboard() {
             <option value="DONE">DONE</option>
           </select>
 
-          {/* Assignment filter */}
           <select
             value={assignmentFilter}
             onChange={(e) =>
@@ -132,7 +124,7 @@ function Dashboard() {
         {loading ? (
           <p>Loading tasks...</p>
         ) : (
-          <Tasks tasks={filteredTasks} onRefresh={loadTasks} />
+          <Tasks tasks={tasks} onRefresh={loadTasks} />
         )}
       </div>
     </div>

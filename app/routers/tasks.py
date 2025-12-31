@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from uuid import UUID
+from typing import Optional
+from fastapi import Query
 
 from app.database import get_db
 from app.models.task import Task, TaskStatus
@@ -62,16 +64,34 @@ def create_task(
 
 @router.get("/", response_model=list[TaskResponse])
 def list_tasks(
+    status: Optional[TaskStatus] = Query(None),
+    assigned: Optional[str] = Query(None),  # me | unassigned
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
-    if current_user.role in ("ADMIN", "MANAGER"):
-        return db.query(Task).all()
+    query = db.query(Task)
 
-    # EMPLOYEE: only own tasks
-    return db.query(Task).filter(
-        Task.assigned_to_id == current_user.id
-    ).all()
+    # RBAC base query
+    if current_user.role not in ("ADMIN", "MANAGER"):
+        query = query.filter(Task.assigned_to_id == current_user.id)
+
+    # Status filter
+    if status:
+        query = query.filter(Task.status == status)
+
+    # Assignment filter
+    if assigned == "me":
+        query = query.filter(Task.assigned_to_id == current_user.id)
+
+    elif assigned == "unassigned":
+        if current_user.role not in ("ADMIN", "MANAGER"):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not allowed to view unassigned tasks",
+            )
+        query = query.filter(Task.assigned_to_id.is_(None))
+
+    return query.all()
 
 @router.patch("/{task_id}/status", response_model=TaskResponse)
 def update_task_status(
