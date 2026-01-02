@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { updateTaskStatus, assignTask } from "../api/tasks";
+import { updateTaskStatus, assignTask , deleteTask} from "../api/tasks";
 import { useCurrentUser } from "../auth/useCurrentUser";
 import type { Task, TaskStatus } from "../types/task";
 import { fetchEmployees } from "../api/users";
@@ -74,6 +74,23 @@ function Tasks({ tasks, onRefresh }: Props) {
       setAssigningTaskId(null);
     }
   };
+
+  const handleDelete = async (taskId: string) => {
+    const ok = window.confirm("Are you sure you want to delete this task?");
+    if (!ok) return;
+
+    try {
+      await deleteTask(taskId);
+      await onRefresh(); // refetch after delete (this is OK)
+    } catch (err: any) {
+      const msg =
+        err.response?.data?.detail ||
+        err.response?.data?.message ||
+        "Delete not allowed";
+      alert(typeof msg === "string" ? msg : JSON.stringify(msg));
+    }
+  };
+
 
   if (userLoading) return <p>Loading tasks...</p>;
   if (tasks.length === 0) return <p>No tasks found</p>;
@@ -182,6 +199,16 @@ function Tasks({ tasks, onRefresh }: Props) {
                     </button>
                   );
                 })}
+              </div>
+            )}
+            {canAssign && (
+              <div className="task-footer">
+                <button
+                  className="danger"
+                  onClick={() => handleDelete(task.id)}
+                >
+                  Delete Task
+                </button>
               </div>
             )}
           </div>

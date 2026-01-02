@@ -48,4 +48,6 @@ export async function assignTask(
   return res.data;
 }
 
-
+export async function deleteTask(taskId: string): Promise<void> {
+  await api.delete(`/tasks/${taskId}`);
+}
