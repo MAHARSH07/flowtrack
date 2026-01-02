@@ -176,6 +176,63 @@ This project demonstrates:
 
 ---
 
+## Deployment
+
+FlowTrack is deployed using free-tier cloud services with a clear separation between frontend, backend, and database.
+
+---
+
+### Backend Deployment
+
+- **Platform:** Render
+- **Framework:** FastAPI
+- **Runtime:** Python
+- **Process Manager:** Uvicorn
+- **Migrations:** Alembic (auto-run on startup)
+
+**Backend URL**
+https://flowtrack-q8u6.onrender.com
+
+**Health Check**
+
+GET /health
+
+Expected response:
+```json
+{
+  "status": "ok",
+  "database": "connected"
+}
+```
+
+### Deployment Notes
+
+- Environment variables are configured in Render dashboard
+- Alembic migrations are triggered automatically using RUN_MIGRATIONS=true
+- CORS is configured to allow frontend access
+
+### Database Deployment
+
+- Database: PostgreSQL
+- Provider: Aiven (free tier)
+- Connection: SSL-enabled
+
+### Frontend Deployment
+
+- Platform: Vercel
+- Framework: React (Vite)
+- Build Tool: Vite
+  
+**Frontend URL**
+https://flowtrack-orcin.vercel.app
+
+**Frontend Environment Variable**
+VITE_API_URL=https://flowtrack-q8u6.onrender.com
+
+API Communication: Axios
+
+---
+
 ## Future Enhancements
 - Audit logs
 - Notifications
