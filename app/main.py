@@ -3,8 +3,24 @@ from app.database import engine
 from sqlalchemy import text
 from app.routers import users, auth, tasks
 from fastapi.middleware.cors import CORSMiddleware
+import subprocess
+import os
+
+def run_migrations():
+    if os.getenv("RUN_MIGRATIONS", "false") != "true":
+        return
+
+    try:
+        subprocess.run(
+            ["alembic", "upgrade", "head"],
+            check=True
+        )
+        print("✅ Alembic migrations applied")
+    except Exception as e:
+        print("❌ Alembic migration failed:", e)
 
 
+run_migrations()
 
 app = FastAPI(title="FlowTrack API")
 app.add_middleware(
