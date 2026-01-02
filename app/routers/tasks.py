@@ -105,9 +105,12 @@ def list_tasks(
             )
         )
 
+    query = query.order_by(Task.created_at.desc())
 
     offset = (page - 1) * limit
+
     return query.offset(offset).limit(limit).all()
+
 
 
 @router.patch("/{task_id}/status", response_model=TaskResponse)
